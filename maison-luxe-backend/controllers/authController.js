@@ -27,14 +27,21 @@ const register = async (req, res) => {
     const user = await User.create({ name, email, password: hashed })
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+    
+    // Set cookie (for local development)
     res.cookie('jwt', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',  // Changed from 'strict' to 'lax' for better cross-domain
       maxAge: 30 * 24 * 60 * 60 * 1000
     })
 
-    res.json({ message: 'Registered successfully', user: { id: user._id, name, email: user.email, isAdmin: user.isAdmin } })
+    // ALSO return token in response body for frontend to store
+    res.json({ 
+      message: 'Registered successfully', 
+      user: { id: user._id, name, email: user.email, isAdmin: user.isAdmin },
+      token: token  // ← ADD THIS
+    })
   } catch (err) {
     res.status(500).json({ message: 'Registration failed', error: err.message })
   }
@@ -57,21 +64,28 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+    
+    // Set cookie (for local development)
     res.cookie('jwt', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',  // Changed from 'strict' to 'lax'
       maxAge: 30 * 24 * 60 * 60 * 1000
     })
 
-    res.json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin } })
+    // ALSO return token in response body for frontend to store
+    res.json({ 
+      message: 'Login successful', 
+      user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin },
+      token: token  // ← ADD THIS
+    })
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message })
   }
 }
 
 const logout = async (req, res) => {
-  res.clearCookie('jwt', { httpOnly: true, sameSite: 'strict', path: '/' })
+  res.clearCookie('jwt', { httpOnly: true, sameSite: 'lax', path: '/' })
   res.json({ message: 'Logged out' })
 }
 

@@ -9,32 +9,44 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const loadUser = async () => {
-      try {
-        const res = await api.get('/auth/me')
-        setUser(res.data.user)
-      } catch (err) {
-        setUser(null)
-      } finally {
-        setLoading(false)
+      // Check if token exists in localStorage
+      const token = localStorage.getItem('jwt')
+      if (token) {
+        try {
+          const res = await api.get('/auth/me')
+          setUser(res.data.user)
+        } catch (err) {
+          localStorage.removeItem('jwt')
+          setUser(null)
+        }
       }
+      setLoading(false)
     }
     loadUser()
   }, [])
 
   const register = async (name, email, password) => {
     const res = await api.post('/auth/register', { name, email, password })
+    if (res.data.token) {
+      localStorage.setItem('jwt', res.data.token)
+    }
     setUser(res.data.user)
     return res.data.user
   }
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password })
+    // Store token in localStorage
+    if (res.data.token) {
+      localStorage.setItem('jwt', res.data.token)
+    }
     setUser(res.data.user)
     return res.data.user
   }
 
   const logout = async () => {
     await api.post('/auth/logout')
+    localStorage.removeItem('jwt')
     setUser(null)
     window.location.href = '/'
   }
